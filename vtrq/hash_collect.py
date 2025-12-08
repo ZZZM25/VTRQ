@@ -1,7 +1,7 @@
-# 第一层验证哈希收集（这种是区域满足查询范围）
+# First layer verification hash collection (for regions that meet the query range)
 def first_vo_hash_collect1(rp_path,p):
     stack = []
-    # 放每一层的验证数据
+    # Store verification data for each layer
     a = []
     flag = rp_path.pop()
     str_border_lng0 = str(flag.border_lng[0])
@@ -75,10 +75,10 @@ def first_vo_hash_collect1(rp_path,p):
             if flag1.linking:
                 for edge in flag1.linking:
                     b.append(edge.edge_merge)
-        # 这个节点的左孩子是需要填空的节点
+        # The left child of this node is the node to be filled
         if flag1.left and flag1.left == flag:
             b.append(" ")
-            # 右孩子不空把右孩子的rp_hash_merge放入
+            # If the right child is not empty, add its rp_hash_merge value
             if flag1.right:
                 b.append(flag1.right.rp_hash_merge)
 
@@ -91,10 +91,10 @@ def first_vo_hash_collect1(rp_path,p):
 
     return stack
 
-# 第一层验证哈希收集（这种是这个区域不满足查询范围）
+# First layer verification hash collection (for regions that do NOT meet the query range)
 def first_vo_hash_collect2(rp_path):
     stack = []
-    # 放每一层的验证数据
+    # Store verification data for each layer
     a = []
     flag = rp_path.pop()
     a.append(" ")
@@ -157,10 +157,10 @@ def first_vo_hash_collect2(rp_path):
             if flag1.linking:
                 for edge in flag1.linking:
                     b.append(edge.edge_merge)
-        # 这个节点的左孩子是需要填空的节点
+        # The left child of this node is the node to be filled
         if flag1.left and flag1.left == flag:
             b.append(" ")
-            # 右孩子不空把右孩子的rp_hash_merge放入
+            # If the right child is not empty, add its rp_hash_merge value
             if flag1.right:
                 b.append(flag1.right.rp_hash_merge)
 
@@ -173,10 +173,8 @@ def first_vo_hash_collect2(rp_path):
 
     return stack
 
-
-
-
-# 因为边可能因为经纬度问题不在查询范围内所以对于不在查询范围内的边也要验证
+# Edges may fall outside the query range due to longitude/latitude issues, 
+# so edges outside the query range also need to be verified
 def no_edge_vo_hash(edge):
     a = []
     a.append(" ")
@@ -198,4 +196,5 @@ def edge_vo_hash(edge):
     a.append(str4)
     a.append(" ")
     return a
+
 
