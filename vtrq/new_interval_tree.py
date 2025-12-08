@@ -24,7 +24,7 @@ class IntervalTNode:
         self.inte = inte
         self.max = inte.high
         self.min = inte.low
-        self.traj_hash = traj_hash  # 添加字符串属性
+        self.traj_hash = traj_hash  # Add string attribute
         self.merge_hash = merge_hash
 
 
@@ -34,7 +34,7 @@ class IntervalTree:
         self.NIL = IntervalTNode(-1, Interval(-1, -1))
         self.NIL.color = BLACK
         self.NIL.max = -1
-        self.NIL.min = float('inf')   # 初始化 NIL 节点的 min 值
+        self.NIL.min = float('inf')   # Initialize min value of NIL node
         self.root = self.NIL
 
     @staticmethod
@@ -51,46 +51,46 @@ class IntervalTree:
 
     @staticmethod
     def is_contained(a, b):
-        # 检查a是否完全被b包含
+        # Check if a is completely contained in b
         return a.low >= b.low and a.high <= b.high
 
     @staticmethod
     def overlap_coverage(a, b):
         """
-        判断区间a是否满足以下任一条件：
-        1. a完全包含在b中（a.low >= b.low 且 a.high <= b.high）
-        2. a未完全包含在b中，但覆盖b的部分超过b总长度的三分之一
+        Determine if interval a meets any of the following conditions:
+        1. a is completely contained in b (a.low >= b.low and a.high <= b.high)
+        2. a is not completely contained in b, but the overlapping part covers more than one-third of b's total length
 
-        参数:
-            a: 具有low和high属性的区间对象（如轨迹时间范围）
-            b: 具有low和high属性的查询区间对象
+        Parameters:
+            a: Interval object with low and high attributes (e.g., trajectory time range)
+            b: Query interval object with low and high attributes
 
-        返回:
-            bool: 满足上述任一条件则返回True，否则返回False
+        Returns:
+            bool: Returns True if any of the above conditions are met, otherwise False
         """
-        # 计算b的总长度，若b是无效区间（low >= high）则直接返回False
+        # Calculate total length of b; return False directly if b is an invalid interval (low >= high)
         b_length = b.high - b.low
         if b_length <= 0:
             return False
 
-        # 条件1：判断a是否完全包含在b中
+        # Condition 1: Check if a is completely contained in b
         is_a_in_b = (a.low >= b.low) and (a.high <= b.high)
         if is_a_in_b:
             return True
 
-        # 条件2：若a未完全包含在b中，判断重叠部分是否超过b的1/3
-        # 计算重叠区间
+        # Condition 2: If a is not completely contained in b, check if overlapping part exceeds 1/3 of b
+        # Calculate overlapping interval
         overlap_low = max(a.low, b.low)
         overlap_high = min(a.high, b.high)
 
-        # 若没有重叠，返回False
+        # Return False if no overlap
         if overlap_low >= overlap_high:
             return False
 
-        # 计算重叠长度
+        # Calculate overlapping length
         overlap_length = overlap_high - overlap_low
 
-        # 判断重叠长度是否超过b总长度的1/3
+        # Check if overlapping length exceeds 1/3 of b's total length
         return overlap_length > (b_length / 3)
 
     def interval_t_search(self, i):
@@ -106,13 +106,13 @@ class IntervalTree:
 
     def interval_t_inorder_walk(self, x, count=0):
         if x != self.NIL:
-            # 递归遍历左子树
+            # Recursively traverse left subtree
             count = self.interval_t_inorder_walk(x.left, count)
             color_str = "Red" if x.color == RED else "Black"
             print(f"[{x.inte.low:3d} {x.inte.high:3d}]     {color_str}     {x.min}   {x.max}  ")
-            # 每输出一次，计数器加一
+            # Increment counter for each output
             count += 1
-            # 递归遍历右子树
+            # Recursively traverse right subtree
             count = self.interval_t_inorder_walk(x.right, count)
         return count
 
@@ -224,7 +224,7 @@ class IntervalTree:
         z.left = self.NIL
         z.right = self.NIL
         self.interval_t_insert_fixup(z)
-        # 更新祖先节点的 min 和 max
+        # Update min and max of ancestor nodes
         current = z.parent
         while current != self.NIL:
             current.max = self.max_of_three(current.inte.high, current.left.max, current.right.max)
@@ -307,14 +307,14 @@ class IntervalTree:
             z.inte = y.inte
             z.max = y.max
             z.min = y.min
-            z.traj_hash = y.traj_hash  # 同步字符串数据
+            z.traj_hash = y.traj_hash  # Synchronize string data
             z.merge_hash = y.merge_hash
             z.traj = y.traj
 
         if y.color == BLACK:
             self.interval_t_delete_fixup(x)
 
-        # 更新祖先节点的 min 和 max
+        # Update min and max of ancestor nodes
         current = x.parent
         while current != self.NIL:
             current.max = self.max_of_three(current.inte.high, current.left.max, current.right.max)
@@ -346,13 +346,13 @@ class IntervalTree:
     #                 a = list(tra)
     #                 ver = self.verify_hash_collect1(a)
     #                 writer.writerow([ver,[x.traj_hash]])
-    #                 # print(f"数据已成功写入到 vo_time.csv 文件中")
+    #                 # print(f"Data successfully written to vo_time.csv file")
     #
     #             else:
     #                 a = list(tra)
     #                 ver = self.verify_hash_collect2(a)
     #                 writer.writerow([ver,[str(x.inte.low),str(x.inte.high)]])
-    #                 # print(f"数据已成功写入到 vo_time.csv 文件中")
+    #                 # print(f"Data successfully written to vo_time.csv file")
     #
     #
     #
@@ -365,18 +365,18 @@ class IntervalTree:
     #                 ver = self.verify_hash_collect3(a)
     #                 tra.pop()
     #                 writer.writerow([ver,[str(t.min),str(t.max)]])
-    #                 # print(f"数据已成功写入到 vo_time.csv 文件中")
+    #                 # print(f"Data successfully written to vo_time.csv file")
     #
     #             if x.right != self.NIL and x.right.min <= query.high:
     #                 _search(x.right)
     #             elif x.right != self.NIL and x.right.min > query.high:
-    #                 t = x.right  # 修正为 x.txt.right
+    #                 t = x.right  # Fixed typo: x.txt.right -> x.right
     #                 tra.append(t)
     #                 a = list(tra)
     #                 ver = self.verify_hash_collect3(a)
     #                 tra.pop()
     #                 writer.writerow([ver,[str(t.min),str(t.max)]])
-    #                 # print(f"数据已成功写入到 vo_time.csv 文件中")
+    #                 # print(f"Data successfully written to vo_time.csv file")
     #             tra.pop()
     #
     #         _search(self.root)
@@ -388,9 +388,9 @@ class IntervalTree:
         tra = []
         a = []
         traj = set()
-        output_rows = []  # 存储所有待写入的行
+        output_rows = []  # Store all rows to be written
 
-        # 优化1：缓存列表append方法为局部变量，减少属性查找开销
+        # Optimization 1: Cache list append method as local variable to reduce attribute lookup overhead
         append_row = output_rows.append
 
         def _search(x):
@@ -398,13 +398,13 @@ class IntervalTree:
                 return
 
             tra.append(x)
-            # 优化2：缓存x的属性到局部变量，减少重复查找（尤其在条件判断中）
+            # Optimization 2: Cache x's attributes as local variables to reduce repeated lookup (especially in condition checks)
             x_max = x.max
             x_min = x.min
             if x_max < query.low or x_min > query.high:
                 a = list(tra)
                 ver = self.verify_hash_collect3(a)
-                # 用缓存的append_row替代output_rows.append
+                # Use cached append_row instead of output_rows.append
                 append_row([ver, [str(x_min), str(x_max)]])
                 tra.pop()
                 return
@@ -417,12 +417,12 @@ class IntervalTree:
             else:
                 a = list(tra)
                 ver = self.verify_hash_collect2(a)
-                # 缓存x.inte的属性，减少访问开销
+                # Cache x.inte's attributes to reduce access overhead
                 inte_low = x.inte.low
                 inte_high = x.inte.high
                 append_row([ver, [str(inte_low), str(inte_high)]])
 
-            # 优化3：缓存x.left和x.right的判断，减少重复属性访问
+            # Optimization 3: Cache x.left and x.right checks to reduce repeated attribute access
             x_left = x.left
             if x_left != self.NIL:
                 if x_left.max >= query.low:
@@ -450,14 +450,14 @@ class IntervalTree:
 
         _search(self.root)
 
-        # 优化4：增大文件缓冲，减少磁盘I/O次数（16MB缓冲）
+        # Optimization 4: Increase file buffering to reduce disk I/O operations (16MB buffer)
         with open(f'vo_time.csv', 'a', newline='', buffering=16 * 1024 * 1024) as csvfile:
             writer = csv.writer(csvfile)
             writer.writerows(output_rows)
 
         return traj
 
-    # 注意
+    # Note
     def node_to_dict(self, node):
         if node == self.NIL:
             return None
@@ -466,8 +466,8 @@ class IntervalTree:
             "key": node.key,
             "interval": [node.inte.low, node.inte.high],
             "max": node.max,
-            "min": node.min,  # 包含 min 值
-            "traj_hash": node.traj_hash,  # 包含字符串数据
+            "min": node.min,  # Include min value
+            "traj_hash": node.traj_hash,  # Include string data
             "merge_hash": node.merge_hash,
             "left": self.node_to_dict(node.left),
             "right": self.node_to_dict(node.right)
@@ -510,10 +510,10 @@ class IntervalTree:
             self.trag_hash_merge(x.left)
             self.trag_hash_merge(x.right)
             # print(f"[{x.txt.inte.low:3d} {x.txt.inte.high:3d}] {x.txt.traj_hash} {x.txt.merage_hash}")
-            # 如果这棵树的左右孩子至少有一个不是空的，则说明不是叶子节点，要计算merge_hash
+            # If at least one of the tree's left/right children is not empty, it means it's not a leaf node - calculate merge_hash
             if x.left != self.NIL or x.right != self.NIL:
                 if x.left != self.NIL:
-                    str_interval_node = str(x.left.min) + str(x.left.max) + str(x.left.inte.low) + str(x.left.inte.high) + x.left.traj_hash + x.left.merge_hash#应该是没有left只有merge_hash有
+                    str_interval_node = str(x.left.min) + str(x.left.max) + str(x.left.inte.low) + str(x.left.inte.high) + x.left.traj_hash + x.left.merge_hash# Should have only merge_hash instead of left
                     x.merge_hash = x.merge_hash + str_interval_node
                 if x.right != self.NIL:
                     str_interval_node = str(x.right.min) + str(x.right.max) + str(x.right.inte.low) + str(x.right.inte.high) + x.right.traj_hash + x.right.merge_hash
@@ -525,7 +525,7 @@ class IntervalTree:
 
 
     def root_hash(self):
-        # 这个地方到时候要改成hash计算
+        # This part will be modified to hash calculation later
         interval_tree_root_hash = str(self.root.min) + str(self.root.max) + str(self.root.inte.low) + str(self.root.inte.high) + self.root.traj_hash + self.root.merge_hash
 
         encoded_data = interval_tree_root_hash.encode('utf-8')
@@ -534,9 +534,9 @@ class IntervalTree:
         interval_tree_root_hash = hash_hex
         return interval_tree_root_hash
 
-    # 收集如果是查到轨迹的验证结果
+    # Collect verification results for found trajectories
     def verify_hash_collect1(self, interval_tree_path):
-        # 先把目标节点出栈
+        # Pop target node from stack first
         # print(interval_tree_path)
         stack = []
         flag = interval_tree_path.pop()
@@ -548,7 +548,7 @@ class IntervalTree:
             a.append(str(flag.inte.high))
             a.append(" ")
             a.append(flag.merge_hash)
-        # 这个标记节点是父节点的左孩子
+        # This flagged node is the left child of its parent node
         if interval_tree_path:
             if interval_tree_path[-1].left != self.NIL and flag == interval_tree_path[-1].left:
                 a.append(str(flag.min))
@@ -591,7 +591,7 @@ class IntervalTree:
         while interval_tree_path:
             b = []
             flag = interval_tree_path.pop()
-            # 如果是空
+            # If empty
             if not interval_tree_path:
                 b.append(str(flag.min))
                 b.append(str(flag.max))
@@ -633,9 +633,9 @@ class IntervalTree:
         return stack
 
 
-    # 收集时间戳不在查询范围内的验证
+    # Collect verification for timestamps outside query range
     def verify_hash_collect2(self, interval_tree_path):
-        # 先把目标节点出栈
+        # Pop target node from stack first
         # print(interval_tree_path)
         stack = []
         flag = interval_tree_path.pop()
@@ -645,24 +645,24 @@ class IntervalTree:
             a.append(str(flag.max))
             a.append(" ")
             a.append(" ")
-            a.append(flag.traj_hash)  # 保持原始类型
-            a.append(flag.merge_hash)  # 保持原始类型
-        # 这个标记节点是父节点的左孩子
+            a.append(flag.traj_hash)  # Keep original type
+            a.append(flag.merge_hash)  # Keep original type
+        # This flagged node is the left child of its parent node
         if interval_tree_path:
             if interval_tree_path[-1].left != self.NIL and flag == interval_tree_path[-1].left:
                 a.append(str(flag.min))
                 a.append(str(flag.max))
                 a.append(" ")
                 a.append(" ")
-                a.append(flag.traj_hash)  # 保持原始类型
-                a.append(flag.merge_hash)  # 保持原始类型
+                a.append(flag.traj_hash)  # Keep original type
+                a.append(flag.merge_hash)  # Keep original type
                 if interval_tree_path[-1].right != self.NIL:
                     a.append(str(interval_tree_path[-1].right.min))
                     a.append(str(interval_tree_path[-1].right.max))
                     a.append(str(interval_tree_path[-1].right.inte.low))
                     a.append(str(interval_tree_path[-1].right.inte.high))
-                    a.append(interval_tree_path[-1].right.traj_hash)  # 保持原始类型
-                    a.append(interval_tree_path[-1].right.merge_hash)  # 保持原始类型
+                    a.append(interval_tree_path[-1].right.traj_hash)  # Keep original type
+                    a.append(interval_tree_path[-1].right.merge_hash)  # Keep original type
 
             elif interval_tree_path[-1].right != self.NIL and flag == interval_tree_path[-1].right:
                 if interval_tree_path[-1].left != self.NIL:
@@ -670,33 +670,33 @@ class IntervalTree:
                     a.append(str(interval_tree_path[-1].left.max))
                     a.append(str(interval_tree_path[-1].left.inte.low))
                     a.append(str(interval_tree_path[-1].left.inte.high))
-                    a.append(interval_tree_path[-1].left.traj_hash)  # 保持原始类型
-                    a.append(interval_tree_path[-1].left.merge_hash)  # 保持原始类型
+                    a.append(interval_tree_path[-1].left.traj_hash)  # Keep original type
+                    a.append(interval_tree_path[-1].left.merge_hash)  # Keep original type
                     a.append(str(flag.min))
                     a.append(str(flag.max))
                     a.append(" ")
                     a.append(" ")
-                    a.append(flag.traj_hash)  # 保持原始类型
-                    a.append(flag.merge_hash)  # 保持原始类型
+                    a.append(flag.traj_hash)  # Keep original type
+                    a.append(flag.merge_hash)  # Keep original type
                 else:
                     a.append(str(flag.min))
                     a.append(str(flag.max))
                     a.append(" ")
                     a.append(" ")
-                    a.append(flag.traj_hash)  # 保持原始类型
-                    a.append(flag.merge_hash)  # 保持原始类型
+                    a.append(flag.traj_hash)  # Keep original type
+                    a.append(flag.merge_hash)  # Keep original type
         stack.append(a)
 
         while interval_tree_path:
             b = []
             flag = interval_tree_path.pop()
-            # 如果是空
+            # If empty
             if not interval_tree_path:
                 b.append(str(flag.min))
                 b.append(str(flag.max))
                 b.append(str(flag.inte.low))
                 b.append(str(flag.inte.high))
-                b.append(flag.traj_hash)  # 保持原始类型
+                b.append(flag.traj_hash)  # Keep original type
                 b.append(" ")
             if interval_tree_path:
                 if interval_tree_path[-1].left != self.NIL and flag == interval_tree_path[-1].left:
@@ -704,15 +704,15 @@ class IntervalTree:
                     b.append(str(flag.max))
                     b.append(str(flag.inte.low))
                     b.append(str(flag.inte.high))
-                    b.append(flag.traj_hash)  # 保持原始类型
+                    b.append(flag.traj_hash)  # Keep original type
                     b.append(" ")
                     if interval_tree_path[-1].right != self.NIL:
                         b.append(str(interval_tree_path[-1].right.min))
                         b.append(str(interval_tree_path[-1].right.max))
                         b.append(str(interval_tree_path[-1].right.inte.low))
                         b.append(str(interval_tree_path[-1].right.inte.high))
-                        b.append(interval_tree_path[-1].right.traj_hash)  # 保持原始类型
-                        b.append(interval_tree_path[-1].right.merge_hash)  # 保持原始类型
+                        b.append(interval_tree_path[-1].right.traj_hash)  # Keep original type
+                        b.append(interval_tree_path[-1].right.merge_hash)  # Keep original type
 
                 if interval_tree_path[-1].right != self.NIL and flag == interval_tree_path[-1].right:
                     if interval_tree_path[-1].left != self.NIL:
@@ -720,20 +720,20 @@ class IntervalTree:
                         b.append(str(interval_tree_path[-1].left.max))
                         b.append(str(interval_tree_path[-1].left.inte.low))
                         b.append(str(interval_tree_path[-1].left.inte.high))
-                        b.append(interval_tree_path[-1].left.traj_hash)  # 保持原始类型
-                        b.append(interval_tree_path[-1].left.merge_hash)  # 保持原始类型
+                        b.append(interval_tree_path[-1].left.traj_hash)  # Keep original type
+                        b.append(interval_tree_path[-1].left.merge_hash)  # Keep original type
                     b.append(str(flag.min))
                     b.append(str(flag.max))
                     b.append(str(flag.inte.low))
                     b.append(str(flag.inte.high))
-                    b.append(flag.traj_hash)  # 保持原始类型
+                    b.append(flag.traj_hash)  # Keep original type
                     b.append(" ")
             stack.append(b)
         return stack
 
-    # 收集查询时候剪枝的查询证明
+    # Collect query proof for pruning during query
     def verify_hash_collect3(self, interval_tree_path):
-        # 先把目标节点出栈
+        # Pop target node from stack first
         # print(interval_tree_path)
         stack = []
         flag = interval_tree_path.pop()
@@ -743,24 +743,24 @@ class IntervalTree:
             a.append(" ")
             a.append(str(flag.inte.low))
             a.append(str(flag.inte.high))
-            a.append(flag.traj_hash)  # 保持原始类型
-            a.append(flag.merge_hash)  # 保持原始类型
-        # 这个标记节点是父节点的左孩子
+            a.append(flag.traj_hash)  # Keep original type
+            a.append(flag.merge_hash)  # Keep original type
+        # This flagged node is the left child of its parent node
         if interval_tree_path:
             if interval_tree_path[-1].left != self.NIL and flag == interval_tree_path[-1].left:
                 a.append(" ")
                 a.append(" ")
                 a.append(str(flag.inte.low))
                 a.append(str(flag.inte.high))
-                a.append(flag.traj_hash)  # 保持原始类型
-                a.append(flag.merge_hash)  # 保持原始类型
+                a.append(flag.traj_hash)  # Keep original type
+                a.append(flag.merge_hash)  # Keep original type
                 if interval_tree_path[-1].right != self.NIL:
                     a.append(str(interval_tree_path[-1].right.min))
                     a.append(str(interval_tree_path[-1].right.max))
                     a.append(str(interval_tree_path[-1].right.inte.low))
                     a.append(str(interval_tree_path[-1].right.inte.high))
-                    a.append(interval_tree_path[-1].right.traj_hash)  # 保持原始类型
-                    a.append(interval_tree_path[-1].right.merge_hash)  # 保持原始类型
+                    a.append(interval_tree_path[-1].right.traj_hash)  # Keep original type
+                    a.append(interval_tree_path[-1].right.merge_hash)  # Keep original type
 
             elif interval_tree_path[-1].right != self.NIL and flag == interval_tree_path[-1].right:
                 if interval_tree_path[-1].left != self.NIL:
@@ -768,33 +768,33 @@ class IntervalTree:
                     a.append(str(interval_tree_path[-1].left.max))
                     a.append(str(interval_tree_path[-1].left.inte.low))
                     a.append(str(interval_tree_path[-1].left.inte.high))
-                    a.append(interval_tree_path[-1].left.traj_hash)  # 保持原始类型
-                    a.append(interval_tree_path[-1].left.merge_hash)  # 保持原始类型
+                    a.append(interval_tree_path[-1].left.traj_hash)  # Keep original type
+                    a.append(interval_tree_path[-1].left.merge_hash)  # Keep original type
                     a.append(" ")
                     a.append(" ")
                     a.append(str(flag.inte.low))
                     a.append(str(flag.inte.high))
-                    a.append(flag.traj_hash)  # 保持原始类型
-                    a.append(flag.merge_hash)  # 保持原始类型
+                    a.append(flag.traj_hash)  # Keep original type
+                    a.append(flag.merge_hash)  # Keep original type
                 else:
                     a.append(" ")
                     a.append(" ")
                     a.append(str(flag.inte.low))
                     a.append(str(flag.inte.high))
-                    a.append(flag.traj_hash)  # 保持原始类型
-                    a.append(flag.merge_hash)  # 保持原始类型
+                    a.append(flag.traj_hash)  # Keep original type
+                    a.append(flag.merge_hash)  # Keep original type
         stack.append(a)
 
         while interval_tree_path:
             b = []
             flag = interval_tree_path.pop()
-            # 如果是空
+            # If empty
             if not interval_tree_path:
                 b.append(str(flag.min))
                 b.append(str(flag.max))
                 b.append(str(flag.inte.low))
                 b.append(str(flag.inte.high))
-                b.append(flag.traj_hash)  # 保持原始类型
+                b.append(flag.traj_hash)  # Keep original type
                 b.append(" ")
             if interval_tree_path:
                 if interval_tree_path[-1].left != self.NIL and flag == interval_tree_path[-1].left:
@@ -802,15 +802,15 @@ class IntervalTree:
                     b.append(str(flag.max))
                     b.append(str(flag.inte.low))
                     b.append(str(flag.inte.high))
-                    b.append(flag.traj_hash)  # 保持原始类型
+                    b.append(flag.traj_hash)  # Keep original type
                     b.append(" ")
                     if interval_tree_path[-1].right != self.NIL:
                         b.append(str(interval_tree_path[-1].right.min))
                         b.append(str(interval_tree_path[-1].right.max))
                         b.append(str(interval_tree_path[-1].right.inte.low))
                         b.append(str(interval_tree_path[-1].right.inte.high))
-                        b.append(interval_tree_path[-1].right.traj_hash)  # 保持原始类型
-                        b.append(interval_tree_path[-1].right.merge_hash)  # 保持原始类型
+                        b.append(interval_tree_path[-1].right.traj_hash)  # Keep original type
+                        b.append(interval_tree_path[-1].right.merge_hash)  # Keep original type
 
                 if interval_tree_path[-1].right != self.NIL and flag == interval_tree_path[-1].right:
                     if interval_tree_path[-1].left != self.NIL:
@@ -818,13 +818,13 @@ class IntervalTree:
                         b.append(str(interval_tree_path[-1].left.max))
                         b.append(str(interval_tree_path[-1].left.inte.low))
                         b.append(str(interval_tree_path[-1].left.inte.high))
-                        b.append(interval_tree_path[-1].left.traj_hash)  # 保持原始类型
-                        b.append(interval_tree_path[-1].left.merge_hash)  # 保持原始类型
+                        b.append(interval_tree_path[-1].left.traj_hash)  # Keep original type
+                        b.append(interval_tree_path[-1].left.merge_hash)  # Keep original type
                     b.append(str(flag.min))
                     b.append(str(flag.max))
                     b.append(str(flag.inte.low))
                     b.append(str(flag.inte.high))
-                    b.append(flag.traj_hash)  # 保持原始类型
+                    b.append(flag.traj_hash)  # Keep original type
                     b.append(" ")
             stack.append(b)
         return stack
@@ -847,7 +847,7 @@ def proof_root_hash(verify_hash_list):
             str2 = ""
             for i in a:
                 if i == " ":
-                    str2 = str2 + str1
+                     str2 = str2 + str1
                 else:
                     str2 = str2 + i
             encoded_data = str2.encode('utf-8')
@@ -872,9 +872,9 @@ def proof_interval(filename):
                          col1[0][i] = col2[0]
                          break
                     i = i + 1
-                if proof_root_hash(col1) != "92b4c3028562946191fee2910582b772283733a16e41eaae107b325aa71705d0":
+                if proof_root_hash(col1) != "92b4c3028562946191fee2910582b772283733a16e41eaae107b325aa71705d0":  #select the special root hash value 
 
-                    print("验证失败")
+                    print("Verification failed")
                     return
             if len(col2) == 2:
                 i = 0
@@ -886,23 +886,9 @@ def proof_interval(filename):
                          if p == 2:
                              break
                     i = i + 1
-                    #要换成该索引根哈希
+                    # Replace with root hash of this index
                 if proof_root_hash(col1) != "cb058e3cb21c55a9690141546d33a96efe068c08174a09e2ae9c02479975f7bc":
-                    print("验证失败")
+                    print("Verification failed")
                     return
     return True
 
-
-if __name__ == "__main__":
-
-    A = [Interval(16, 21), Interval(8, 9), Interval(25, 30), Interval(5, 8),
-             Interval(15, 23), Interval(17, 19), Interval(26, 26),
-             Interval(0, 3), Interval(6, 10), Interval(19, 20)]
-    str_list = ["data1", "data2", "data3", "data4", "data5", "data6", "data7", "data8", "data9", "data10"]
-    # str_list1 = ["data11", "data21", "data31", "data41", "data51", "data61", "data71", "data81", "data91", "data101"]
-    n = len(A)
-
-    T = IntervalTree()
-    for i in range(n):
-        T.interval_t_insert(A[i], str_list[i])
-    T.interval_t_inorder_walk(T.root)
