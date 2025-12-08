@@ -8,14 +8,18 @@ from hash_collect import first_vo_hash_collect2, first_vo_hash_collect1, edge_vo
 
 def orientation(p, q, r):
     """
-    此函数用于判断三个点 p, q, r 的方向关系。
-    通过计算向量叉积来确定三点的相对位置，结果可以是共线、顺时针或逆时针。
-    :param p: 第一个点，格式为 (x, y)
-    :param q: 第二个点，格式为 (x, y)
-    :param r: 第三个点，格式为 (x, y)
-    :return: 0 表示共线，1 表示顺时针，2 表示逆时针
+    Determine the orientation of three points p, q, r by calculating vector cross product.
+    This function identifies whether the points are collinear, clockwise, or counterclockwise.
+    
+    Args:
+        p (tuple): First point in format (x, y)
+        q (tuple): Second point in format (x, y)
+        r (tuple): Third point in format (x, y)
+    
+    Returns:
+        int: 0 for collinear, 1 for clockwise, 2 for counterclockwise
     """
-    # 计算向量叉积
+    # Calculate vector cross product
     val = (q[1] - p[1]) * (r[0] - q[0]) - (q[0] - p[0]) * (r[1] - q[1])
     if val == 0:
         return 0
@@ -26,12 +30,15 @@ def orientation(p, q, r):
 
 def on_segment(p, q, r):
     """
-    判断点 q 是否在线段 pr 上。
-    通过比较点 q 的坐标是否在 p 和 r 的坐标范围之内来判断。
-    :param p: 线段的一个端点，格式为 (x, y)
-    :param q: 待判断的点，格式为 (x, y)
-    :param r: 线段的另一个端点，格式为 (x, y)
-    :return: 如果点 q 在线段 pr 上返回 True，否则返回 False
+    Check if point q lies on line segment pr by verifying coordinate ranges.
+    
+    Args:
+        p (tuple): One endpoint of the segment in format (x, y)
+        q (tuple): Point to be checked in format (x, y)
+        r (tuple): The other endpoint of the segment in format (x, y)
+    
+    Returns:
+        bool: True if q is on segment pr, False otherwise
     """
     return (min(p[0], r[0]) <= q[0] <= max(p[0], r[0]) and
             min(p[1], r[1]) <= q[1] <= max(p[1], r[1]))
@@ -39,25 +46,29 @@ def on_segment(p, q, r):
 
 def do_intersect(p1, q1, p2, q2):
     """
-    判断两条线段 p1q1 和 p2q2 是否相交。
-    先通过 orientation 函数判断点的方向关系，再处理共线且重叠的特殊情况。
-    :param p1: 第一条线段的一个端点，格式为 (x, y)
-    :param q1: 第一条线段的另一个端点，格式为 (x, y)
-    :param p2: 第二条线段的一个端点，格式为 (x, y)
-    :param q2: 第二条线段的另一个端点，格式为 (x, y)
-    :return: 如果两条线段相交返回 True，否则返回 False
+    Check if two line segments p1q1 and p2q2 intersect.
+    First determine orientation relationships, then handle special collinear/overlapping cases.
+    
+    Args:
+        p1 (tuple): One endpoint of first segment in format (x, y)
+        q1 (tuple): The other endpoint of first segment in format (x, y)
+        p2 (tuple): One endpoint of second segment in format (x, y)
+        q2 (tuple): The other endpoint of second segment in format (x, y)
+    
+    Returns:
+        bool: True if segments intersect, False otherwise
     """
-    # 计算四个方向值，用于判断点的相对位置
+    # Calculate four orientation values to determine relative positions
     o1 = orientation(p1, q1, p2)
     o2 = orientation(p1, q1, q2)
     o3 = orientation(p2, q2, p1)
     o4 = orientation(p2, q2, q1)
 
-    # 正常相交情况：两条线段的端点分别在对方线段所在直线的两侧
+    # General intersection case: endpoints of each segment are on opposite sides of the other segment
     if o1 != o2 and o3 != o4:
         return True
 
-    # 处理共线且重叠的特殊情况
+    # Handle special collinear and overlapping cases
     if o1 == 0 and on_segment(p1, p2, q1):
         return True
     if o2 == 0 and on_segment(p1, q2, q1):
@@ -72,25 +83,28 @@ def do_intersect(p1, q1, p2, q2):
 
 def segment_intersects_rect(segment, rect):
     """
-    判断线段是否与矩形相交。
-    将矩形的四条边分别与线段进行相交判断。
-    :param segment: 线段，格式为 ((x1, y1), (x2, y2))
-    :param rect: 矩形，格式为 ((x_min, y_min), (x_max, y_max))
-    :return: 若相交返回 True，否则返回 False
+    Check if a line segment intersects with a rectangle by testing intersection with all four rectangle edges.
+    
+    Args:
+        segment (tuple): Line segment in format ((x1, y1), (x2, y2))
+        rect (tuple): Rectangle in format ((x_min, y_min), (x_max, y_max))
+    
+    Returns:
+        bool: True if segment intersects rectangle, False otherwise
     """
-    # 提取矩形的左下角和右上角坐标
+    # Extract bottom-left and top-right coordinates of the rectangle
     x_min, y_min = rect[0]
     x_max, y_max = rect[1]
-    # 提取线段的两个端点
+    # Extract endpoints of the segment
     p1, q1 = segment
-    # 定义矩形的四条边
+    # Define four edges of the rectangle
     rect_edges = [
-        ((x_min, y_min), (x_max, y_min)),  # 底边
-        ((x_max, y_min), (x_max, y_max)),  # 右边
-        ((x_max, y_max), (x_min, y_max)),  # 顶边
-        ((x_min, y_max), (x_min, y_min))  # 左边
+        ((x_min, y_min), (x_max, y_min)),  # Bottom edge
+        ((x_max, y_min), (x_max, y_max)),  # Right edge
+        ((x_max, y_max), (x_min, y_max)),  # Top edge
+        ((x_min, y_max), (x_min, y_min))   # Left edge
     ]
-    # 遍历矩形的四条边，判断线段与每条边是否相交
+    # Check intersection with each rectangle edge
     for rect_edge in rect_edges:
         p2, q2 = rect_edge
         if do_intersect(p1, q1, p2, q2):
@@ -98,56 +112,104 @@ def segment_intersects_rect(segment, rect):
     return False
 
 
-
-#判断两个经纬度方框是否有交集
+# Check if two longitude/latitude rectangles intersect
 def rectangles_intersect(rect1, rect2):
-    if rect1 != []:# 因为有的节点不是叶子节点，但他什么边也不存
+    """
+    Check intersection between two geographic rectangles (longitude/latitude bounds).
+    
+    Args:
+        rect1 (list): First rectangle in format [[min_lng, max_lng], [min_lat, max_lat]] (empty list if no edges)
+        rect2 (list): Second rectangle in format [[min_lng, max_lng], [min_lat, max_lat]]
+    
+    Returns:
+        bool: True if rectangles intersect, False otherwise
+    """
+    if rect1 != []:  # Skip nodes with no edges (non-leaf nodes)
         min_lat1, max_lat1 = rect1[1]
         min_lng1, max_lng1 = rect1[0]
         min_lat2, max_lat2 = rect2[1]
         min_lng2, max_lng2 = rect2[0]
+        # Non-intersection conditions (axis-aligned bounding box test)
         return not (max_lat1 <= min_lat2 or min_lat1 >= max_lat2 or max_lng1 <= min_lng2 or min_lng1 >= max_lng2)
     else:
         return False
 
 
 def range_query(root, query_lng_range, query_lat_range, query_time_start, query_time_end):
-    # 查询
+    """
+    Spatiotemporal range query on RP-Tree with Verification Object (VO) generation for hash verification.
+    Collects trajectory IDs matching the query range and writes VO data to CSV for subsequent verification.
+    
+    Args:
+        root (RPTreeNode): Root node of the RP-Tree
+        query_lng_range (tuple): Longitude range of query (min_lng, max_lng)
+        query_lat_range (tuple): Latitude range of query (min_lat, max_lat)
+        query_time_start (int): Start timestamp of query (Unix timestamp)
+        query_time_end (int): End timestamp of query (Unix timestamp)
+    
+    Returns:
+        list: List of trajectory IDs matching the spatiotemporal query range
+    """
+    # Store matching trajectory IDs
     traj_set = []
+    # Track traversed RP-Tree nodes
     rp_path = []
+    # Temporary list for node collection
     a = []
+    # Query rectangle (longitude/latitude bounds)
     query_rect = [query_lng_range, query_lat_range]
+    # Query time range
     query_time = [query_time_start, query_time_end]
 
+    # Open CSV file in append mode to write VO data
     with open('vo.csv', 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
 
         def write_to_csv(ver, data=None):
+            """
+            Helper function to write verification data to CSV.
+            
+            Args:
+                ver (list): Verification data components
+                data (list, optional): Supplementary data (e.g., coordinates, timestamps)
+            """
             if data is not None:
                 writer.writerow([ver, data])
             else:
                 writer.writerow([ver])
 
         def process_edge(e, query_rect, query_time):
-            # 保持原有逻辑不变
+            """
+            Process edge to check spatiotemporal intersection and generate edge-level VO data.
+            
+            Args:
+                e (Edge): Edge object to process
+                query_rect (list): Query rectangle [[min_lng, max_lng], [min_lat, max_lat]]
+                query_time (list): Query time range [start_ts, end_ts]
+            """
+            # Case 1: At least one endpoint of edge is inside query rectangle
             if (query_rect[0][0] <= e.start.lng <= query_rect[0][1] and query_rect[1][0] <= e.start.lat <=
                 query_rect[1][1]) or (
                     query_rect[0][0] <= e.end.lng <= query_rect[0][1] and query_rect[1][0] <= e.end.lat <=
                     query_rect[1][1]):
+                # Generate VO hash for edge in query range
                 ver = edge_vo_hash(e)
                 writer.writerow(["e_vo_start"])
                 write_to_csv(ver)
 
+                # Process each trajectory on the edge
                 for traj in e.traj_hashList:
                     ver, flag = second_vo_hash_collect_find(traj, query_time[0], query_time[1])
+                    # Data to verify: trajectory hash (match) or timestamps (no match)
                     data = [traj.traj_hash] if flag == 1 else [str(traj.start_time), str(traj.end_time)]
+                    # Add trajectory to result set if it matches time range (avoid duplicates)
                     if flag == 1:
-                        # 手动检查重复项（低效操作）
                         if traj.traj_hash not in traj_set:
                             traj_set.append(traj.traj_hash)
                     write_to_csv(ver, data)
                 writer.writerow(["e_vo_end"])
 
+            # Case 2: Edge intersects with query rectangle (but endpoints outside)
             elif segment_intersects_rect(((e.start.lng, e.start.lat), (e.end.lng, e.end.lat)),
                                          ((query_rect[0][0], query_rect[1][0]), (query_rect[0][1], query_rect[1][1]))):
                 ver = edge_vo_hash(e)
@@ -158,27 +220,39 @@ def range_query(root, query_lng_range, query_lat_range, query_time_start, query_
                     ver, flag = second_vo_hash_collect_find(traj, query_time[0], query_time[1])
                     data = [traj.traj_hash] if flag == 1 else [str(traj.start_time), str(traj.end_time)]
                     if flag == 1:
-
                         if traj.traj_hash not in traj_set:
                             traj_set.append(traj.traj_hash)
                     write_to_csv(ver, data)
                 writer.writerow(["e_vo_end"])
 
+            # Case 3: Edge is completely outside query rectangle
             else:
+                # Generate VO hash for edge outside query range
                 ver = no_edge_vo_hash(e)
                 data = [str(e.start.lng), str(e.start.lat), str(e.end.lng), str(e.end.lat)]
                 writer.writerow(["e_vo_start"])
                 write_to_csv(ver, data)
                 writer.writerow(["e_vo_end"])
 
-        # 保持_query函数不变
         def _query(node, query_rect, query_time):
+            """
+            Recursive core query function to traverse RP-Tree and collect VO data.
+            
+            Args:
+                node (RPTreeNode): Current RP-Tree node to process
+                query_rect (list): Query rectangle [[min_lng, max_lng], [min_lat, max_lat]]
+                query_time (list): Query time range [start_ts, end_ts]
+            """
             if node is None:
                 return
+            # Record traversed node
             rp_path.append(node)
+            # Get current node's geographic bounds
             node_rect = [node.border_lng, node.border_lat]
 
+            # Case 1: Node bounds do NOT intersect with query rectangle
             if not rectangles_intersect(node_rect, query_rect):
+                # Collect nodes for VO generation (non-intersecting case)
                 for i in rp_path:
                     a.append(i)
                 ver = first_vo_hash_collect2(a)
@@ -189,42 +263,55 @@ def range_query(root, query_lng_range, query_lat_range, query_time_start, query_
                 rp_path.pop()
                 return
 
+            # Case 2: Node bounds intersect with query rectangle
+            # Collect nodes for VO generation (intersecting case)
             for i in rp_path:
                 a.append(i)
             ver = first_vo_hash_collect1(a)
             writer.writerow(["lng_lat_vo_start"])
             write_to_csv(ver)
 
+            # Process leaf node (contains adjacent edges)
             if node.is_leaf():
                 if node.adjacent_list:
                     for e in node.adjacent_list:
                         process_edge(e, query_rect, query_time)
                     writer.writerow(["lng_lat_vo_end"])
+            
+            # Process internal node (contains linking edges)
             if not node.is_leaf():
                 if node.linking:
                     for e in node.linking:
                         process_edge(e, query_rect, query_time)
                 writer.writerow(["lng_lat_vo_end"])
-
+                # Recursively query child nodes
                 _query(node.left, query_rect, query_time)
                 _query(node.right, query_rect, query_time)
+            
+            # Remove current node from path (backtrack)
             rp_path.pop()
 
+        # Start recursive query from root node
         _query(root, query_rect, query_time)
 
+    # Return list of matching trajectory IDs
     return traj_set
 
 
-
-
 def proof_vo(filename):
-
-    # 文件路径
-    file_path = filename
-    # 打开文件
-    with open(file_path, 'r', encoding='utf-8') as file:
-
-        # 逐行读取文件内容
+    """
+    Verify the integrity of query results by re-computing hashes from VO data in CSV file.
+    Validates both spatial (RP-Tree node/edge) and temporal (trajectory) hash chains.
+    
+    Args:
+        filename (str): Path to CSV file containing VO data
+    
+    Returns:
+        bool: True if all hash verifications pass, False otherwise
+    """
+    # Open VO CSV file for reading
+    with open(filename, 'r', encoding='utf-8') as file:
+        # Temporary storage for verification flags and hash components
         flag1 = []
         flag2 = []
         list1 = []
@@ -232,29 +319,26 @@ def proof_vo(filename):
         reader = csv.reader(file)
 
         for row in reader:
-
-
+            # Process spatial (longitude/latitude) VO start marker
             if row[0] == "lng_lat_vo_start":
-
                 flag1 = next(reader)
 
-                # 如果lag_lat_vo长度是一说明这个区域与查询范围是有交集的
+                # Case 1: VO length ≤1 means node intersects query range
                 if len(flag1) <= 1:
                     flag1 = ast.literal_eval(flag1[0])
                     flag1.reverse()
                     list1 = []
-                # 如果lag_lat_vo长度是大于一的说明这个区域与查询范围没有交集，要把后面的四个经纬度数据填入计算hash
+                # Case 2: VO length >1 means node does NOT intersect query range (fill coordinates)
                 else:
                     c = flag1[0]
                     b = flag1[1]
                     c = ast.literal_eval(c)
                     c.reverse()
                     a = c[-1]
-                    # 读取要填入的经纬度数据
-
+                    # Read coordinate data to fill placeholders
                     b = ast.literal_eval(b)
                     b = b[0]
-                    # 把经纬度数据插入
+                    # Insert coordinate data into placeholders
                     j = 0
                     for i in range(len(a)):
                         if a[i] == " ":
@@ -262,14 +346,14 @@ def proof_vo(filename):
                             j = j + 1
                             if j > 3:
                                 break
+                    # Compute SHA-256 hash for verification
                     all_hash_join = '+'.join(item for item in a)
                     encoded_data = all_hash_join.encode('utf-8')
                     hash_object = hashlib.sha256(encoded_data)
                     hash_hex = hash_object.hexdigest()
 
+                    # Process remaining hash components in chain
                     t = c.pop()
-
-
                     while c:
                         t = c.pop()
                         for i in range(len(t)):
@@ -283,64 +367,54 @@ def proof_vo(filename):
                     row = next(reader)
 
                     liat1 = []
-                    #print(hash_hex)
+                    # Verify root hash against expected value
                     if hash_hex != "e3f8271c6a401ab67b4991b3919204ec7a7e76637391be89484ef9d11a7f19fe":
-
                         return False
 
+            # Process edge VO start marker
             elif row[0] == "e_vo_start":
-
                 flag2 = next(reader)
 
-                # 如果e_vo长度是一说明这个边与查询范围有交集
+                # Case 1: VO length ≤1 means edge intersects query range
                 if len(flag2) <= 1:
                     flag2 = ast.literal_eval(flag2[0])
                     list2 = []
-                # 如果e_vo长度大于一说明这条边是因为不在范围内所以把后面经纬度数据插入验证
+                # Case 2: VO length >1 means edge does NOT intersect query range (fill coordinates)
                 else:
                     a = flag2[0]
-
                     b = flag2[1]
-
                     a = ast.literal_eval(a)
                     b = ast.literal_eval(b)
+                    # Insert edge coordinates into placeholders
                     for i in range(4):
                         a[i] = b[i]
-                    # print(a)
-                    # print(44)
+                    # Compute edge hash
                     all_hash_join = '+'.join(item for item in a)
-
                     encoded_data = all_hash_join.encode('utf-8')
                     hash_object = hashlib.sha256(encoded_data)
                     hash_hex = hash_object.hexdigest()
                     list1.append(hash_hex)
-                    # print(hash_hex)
                     row = next(reader)
 
-
-            elif row[0] ==  "e_vo_end":
+            # Process edge VO end marker
+            elif row[0] == "e_vo_end":
                 a = flag2
-                # print(list2)
-                # print("1")
+                # Fill trajectory hash placeholders
                 j = 0
                 for i in range(len(a)):
                     if a[i] == " ":
                         a[i] = list2[j]
                         j = j + 1
-                # print(a)
-                # print("2")
+                # Compute edge hash with filled placeholders
                 all_hash_join = '+'.join(item for item in a)
-                # print(all_hash_join)
-                # print(3)
                 encoded_data = all_hash_join.encode('utf-8')
                 hash_object = hashlib.sha256(encoded_data)
                 hash_hex = hash_object.hexdigest()
                 list1.append(hash_hex)
-                # print(hash_hex)
 
+            # Process spatial VO end marker
             elif row[0] == "lng_lat_vo_end":
-                # print(flag1)
-
+                # Fill node hash placeholders
                 t = flag1.pop()
                 j = 0
                 for i in range(len(t)):
@@ -348,11 +422,13 @@ def proof_vo(filename):
                         t[i] = list1[j]
                         j = j + 1
 
+                # Compute node hash with filled placeholders
                 all_hash_join = '+'.join(item for item in t)
                 encoded_data = all_hash_join.encode('utf-8')
                 hash_object = hashlib.sha256(encoded_data)
                 hash_hex = hash_object.hexdigest()
 
+                # Process remaining nodes in hash chain
                 while flag1:
                     t = flag1.pop()
                     for i in range(len(t)):
@@ -364,252 +440,243 @@ def proof_vo(filename):
                     hash_object = hashlib.sha256(encoded_data)
                     hash_hex = hash_object.hexdigest()
                 list1 = []
-                #print(hash_hex)
+                # Verify root hash against expected value
                 if hash_hex != "e3f8271c6a401ab67b4991b3919204ec7a7e76637391be89484ef9d11a7f19fe":
                     return False
+            
+            # Process trajectory verification data
             else:
                 a = row[0]
                 b = row[1]
                 a = ast.literal_eval(a)
                 b = ast.literal_eval(b)
+                # Fill trajectory placeholders with verification data
                 j = 0
                 for i in range(len(a)):
                     if a[i] == " ":
                         a[i] = b[j]
                         j = j + 1
-                # print(a)
+                # Compute trajectory hash
                 str_all = a[0] + a[1] + a[2]
-
                 encoded_data = str_all.encode('utf-8')
                 hash_object = hashlib.sha256(encoded_data)
                 hash_hex = hash_object.hexdigest()
                 list2.append(hash_hex)
 
+    # All verifications passed
     return True
 
 
-
-
-
-
-
-
-
-
-
-
-# # 范围查询函数
+# ------------------------------ Deprecated Original Query Function ------------------------------
 # def range_query(root, query_lng_range, query_lat_range, query_time_start, query_time_end):
-#     # 查询
+#     # Range query
 #     rp_path = []
 #     a = []
 #
 #     def _query(node, query_rect, query_time):
 #         if node is None:
 #             return
-#         # 把每一个走过的节点记录
+#         # Record each traversed node
 #         rp_path.append(node)
 #         node_rect = [node.border_lng, node.border_lat]
-#         # 如果该区域范围不符合查询范围要返回经纬度不符合的验证信息
+#         # Return verification data for non-intersecting regions
 #         if not rectangles_intersect(node_rect, query_rect):
 #             for i in rp_path:
 #                 a.append(i)
 #             ver = first_vo_hash_collect2(a)
 #             try:
-#                 # 以追加模式打开 CSV 文件
+#                 # Open CSV file in append mode
 #                 with open(f'vo.csv', 'a', newline='') as csvfile:
 #                     writer = csv.writer(csvfile)
-#                     # 写入数据行
+#                     # Write data row
 #                     writer.writerow([ver, [node.border_lng[0], node.border_lng[1], node.border_lat[0], node.border_lat[1]]])
-#                 print(f"collect2数据已成功写入到 vo.csv 文件")
+#                 print(f"collect2 data successfully written to vo.csv")
 #             except Exception as e:
-#                 print(f"写入文件时出现错误: {e}")
+#                 print(f"Error writing to file: {e}")
 #             return
 #
-#         # 首先这个区域满足查询范围先把第一层索引的vo写入
+#         # Write first-level index VO for intersecting regions
 #         for i in rp_path:
 #             a.append(i)
 #         ver = first_vo_hash_collect1(a)
 #         try:
-#             # 以追加模式打开 CSV 文件
+#             # Open CSV file in append mode
 #             with open(f'vo.csv', 'a', newline='') as csvfile:
 #                 writer = csv.writer(csvfile)
-#                 # 写入数据行
+#                 # Write data row
 #                 writer.writerow([ver])
-#             print(f"collect1数据已成功写入到 vo.csv 文件")
+#             print(f"collect1 data successfully written to vo.csv")
 #         except Exception as e:
-#             print(f"写入文件时出现错误: {e}")
+#             print(f"Error writing to file: {e}")
 #
 #
 #         if node.is_leaf():
-#                 # 写函数判断这个区域内具体哪条边和查询范围有交集
+#                 # Function to determine edges intersecting query range
 #             for e in node.adjacent_list:
-#                 # 第一种情况判断这条边的两个端点是否至少有一个落在查询范围区域内
+#                 # Case 1: At least one endpoint in query range
 #                 if (query_rect[0][0] <= e.start.lng <= query_rect[0][1] and query_rect[1][0] <= e.start.lat <=
 #                     query_rect[1][1]) or (
 #                         query_rect[0][0] <= e.end.lng <= query_rect[0][1] and query_rect[1][0] <= e.end.lat <=
 #                         query_rect[1][1]):
 #
-#                 #这种是在查询范围内的边
+#                 # Edge in query range
 #                     ver = edge_vo_hash(e)
 #                     try:
-#                         # 以追加模式打开 CSV 文件
+#                         # Open CSV file in append mode
 #                         with open(f'vo.csv', 'a', newline='') as csvfile:
 #                             writer = csv.writer(csvfile)
-#                             # 写入数据行
+#                             # Write data row
 #                             writer.writerow([ver])
-#                         print(f"edge数据已成功写入到 vo.csv 文件")
+#                         print(f"edge data successfully written to vo.csv")
 #                     except Exception as e:
-#                         print(f"写入文件时出现错误: {e}")
+#                         print(f"Error writing to file: {e}")
 #
-#                 # 开始对这条边的轨迹进行查询
+#                 # Query trajectories on this edge
 #                     for traj in e.traj_hashList:
 #                         ver, flag = second_vo_hash_collect_find(traj, query_time[0], query_time[1])
 #                         try:
-#                             # 以追加模式打开 CSV 文件
+#                             # Open CSV file in append mode
 #                             with open(f'vo.csv', 'a', newline='') as csvfile:
 #                                 writer = csv.writer(csvfile)
 #                                 if flag == 1:
-#                                 # 写入数据行
+#                                 # Write data row
 #                                     writer.writerow([ver, [traj.traj_hash]])
 #                                 else:
 #                                     writer.writerow([ver, [str(traj.start_time), str(traj.end_time)]])
-#                             print(f"traj数据已成功写入到 vo.csv 文件")
+#                             print(f"traj data successfully written to vo.csv")
 #                         except Exception as e:
-#                             print(f"写入文件时出现错误: {e}")
+#                             print(f"Error writing to file: {e}")
 #
-#                 # 如果两个端点都不在查询范围，那么判断线段和查询范围是否有交集
+#                 # Case 2: Check segment intersection if endpoints outside query range
 #                 elif segment_intersects_rect(((e.start.lng, e.start.lat), (e.end.lng, e.end.lat)), (
 #                 (query_rect[0][0], query_rect[1][0]), (query_rect[0][1], query_rect[1][1]))):
-#                     # 这种是在查询范围内的边
+#                     # Edge intersects query range
 #                     ver = edge_vo_hash(e)
 #                     try:
-#                         # 以追加模式打开 CSV 文件
+#                         # Open CSV file in append mode
 #                         with open(f'vo.csv', 'a', newline='') as csvfile:
 #                             writer = csv.writer(csvfile)
-#                             # 写入数据行
+#                             # Write data row
 #                             writer.writerow([ver])
-#                         print(f"edge数据已成功写入到 vo.csv 文件")
+#                         print(f"edge data successfully written to vo.csv")
 #                     except Exception as e:
-#                         print(f"写入文件时出现错误: {e}")
+#                         print(f"Error writing to file: {e}")
 #
-#                     # 开始对这条边的轨迹进行查询
+#                     # Query trajectories on this edge
 #                     for traj in e.traj_hashList:
 #                         ver, flag = second_vo_hash_collect_find(traj, query_time[0], query_time[1], flag)
 #                         try:
-#                             # 以追加模式打开 CSV 文件
+#                             # Open CSV file in append mode
 #                             with open(f'vo.csv', 'a', newline='') as csvfile:
 #                                 writer = csv.writer(csvfile)
 #                                 if flag == 1:
-#                                     # 写入数据行
+#                                     # Write data row
 #                                     writer.writerow([ver, [traj.traj_hash]])
 #                                 else:
 #                                     writer.writerow([ver, [str(traj.start_time), str(traj.end_time)]])
-#                             print(f"traj数据已成功写入到 vo.csv 文件")
+#                             print(f"traj data successfully written to vo.csv")
 #                         except Exception as e:
-#                             print(f"写入文件时出现错误: {e}")
+#                             print(f"Error writing to file: {e}")
 #                 else:
-#             #边不在查询范围内
+#             # Edge outside query range
 #                     ver = no_edge_vo_hash(e)
 #                     try:
-#                         # 以追加模式打开 CSV 文件
+#                         # Open CSV file in append mode
 #                         with open(f'vo.csv', 'a', newline='') as csvfile:
 #                             writer = csv.writer(csvfile)
-#                             # 写入数据行
+#                             # Write data row
 #                             writer.writerow([ver,[str(e.start.lng),str(e.start.lat),str(e.end.lat),str(e.emd.lat)]])
-#                         print(f"no_edge数据已成功写入到 vo.csv 文件")
+#                         print(f"no_edge data successfully written to vo.csv")
 #                     except Exception as e:
-#                         print(f"写入文件时出现错误: {e}")
+#                         print(f"Error writing to file: {e}")
 #
 #
 #         if not node.is_leaf():
 #             if node.linking:
 #
 #                 for e in node.linking:
-#                     # 第一种情况判断这条边的两个端点是否至少有一个落在查询范围区域内
+#                     # Case 1: At least one endpoint in query range
 #                     if (query_rect[0][0] <= e.start.lng <= query_rect[0][1] and query_rect[1][0] <= e.start.lat <=
 #                         query_rect[1][1]) or (
 #                             query_rect[0][0] <= e.end.lng <= query_rect[0][1] and query_rect[1][0] <= e.end.lat <=
 #                             query_rect[1][1]):
-#                         # 这种是在查询范围内的边
+#                         # Edge in query range
 #                         ver = edge_vo_hash(e)
 #                         try:
-#                             # 以追加模式打开 CSV 文件
+#                             # Open CSV file in append mode
 #                             with open(f'vo.csv', 'a', newline='') as csvfile:
 #                                 writer = csv.writer(csvfile)
-#                                 # 写入数据行
+#                                 # Write data row
 #                                 writer.writerow([ver])
-#                             print(f"edge数据已成功写入到 vo.csv 文件")
+#                             print(f"edge data successfully written to vo.csv")
 #                         except Exception as e:
-#                             print(f"写入文件时出现错误: {e}")
+#                             print(f"Error writing to file: {e}")
 #
-#                         # 开始对这条边的轨迹进行查询
+#                         # Query trajectories on this edge
 #                         for traj in e.traj_hashList:
 #                             ver, flag = second_vo_hash_collect_find(traj, query_time[0], query_time[1])
 #                             try:
-#                                 # 以追加模式打开 CSV 文件
+#                                 # Open CSV file in append mode
 #                                 with open(f'vo.csv', 'a', newline='') as csvfile:
 #                                     writer = csv.writer(csvfile)
 #                                     if flag == 1:
-#                                         # 写入数据行
+#                                         # Write data row
 #                                         writer.writerow([ver, [traj.traj_hash]])
 #                                     else:
 #                                         writer.writerow([ver, [str(traj.start_time), str(traj.end_time)]])
-#                                 print(f"traj数据已成功写入到 vo.csv 文件")
+#                                 print(f"traj data successfully written to vo.csv")
 #                             except Exception as e:
-#                                 print(f"写入文件时出现错误: {e}")
+#                                 print(f"Error writing to file: {e}")
 #
-#                     # 如果两个端点都不在查询范围，那么判断线段和查询范围是否有交集
+#                     # Case 2: Check segment intersection if endpoints outside query range
 #                     elif segment_intersects_rect(((e.start.lng, e.start.lat), (e.end.lng, e.end.lat)),
 #                                                  ((query_rect[0][0], query_rect[1][0]),
 #                                                   (query_rect[0][1], query_rect[1][1]))):
 #                         ver = edge_vo_hash(e)
 #                         try:
-#                             # 以追加模式打开 CSV 文件
+#                             # Open CSV file in append mode
 #                             with open(f'vo.csv', 'a', newline='') as csvfile:
 #                                 writer = csv.writer(csvfile)
-#                                 # 写入数据行
+#                                 # Write data row
 #                                 writer.writerow([ver])
-#                             print(f"edge数据已成功写入到 vo.csv 文件")
+#                             print(f"edge data successfully written to vo.csv")
 #                         except Exception as e:
-#                             print(f"写入文件时出现错误: {e}")
+#                             print(f"Error writing to file: {e}")
 #
-#                         # 开始对这条边的轨迹进行查询
+#                         # Query trajectories on this edge
 #                         for traj in e.traj_hashList:
 #                             ver, flag = second_vo_hash_collect_find(traj, query_time[0], query_time[1], flag)
 #                             try:
-#                                 # 以追加模式打开 CSV 文件
+#                                 # Open CSV file in append mode
 #                                 with open(f'vo.csv', 'a', newline='') as csvfile:
 #                                     writer = csv.writer(csvfile)
 #                                     if flag == 1:
-#                                         # 写入数据行
+#                                         # Write data row
 #                                         writer.writerow([ver, [traj.traj_hash]])
 #                                     else:
 #                                         writer.writerow([ver, [str(traj.start_time), str(traj.end_time)]])
-#                                 print(f"traj数据已成功写入到 vo.csv 文件")
+#                                 print(f"traj data successfully written to vo.csv")
 #                             except Exception as e:
-#                                 print(f"写入文件时出现错误: {e}")
+#                                 print(f"Error writing to file: {e}")
 #                     else:
-#                         # 边不在查询范围内
+#                         # Edge outside query range
 #                         ver = no_edge_vo_hash(e)
 #                         try:
-#                             # 以追加模式打开 CSV 文件
+#                             # Open CSV file in append mode
 #                             with open(f'vo.csv', 'a', newline='') as csvfile:
 #                                 writer = csv.writer(csvfile)
-#                                 # 写入数据行
+#                                 # Write data row
 #                                 writer.writerow(
 #                                     [ver, [str(e.start.lng), str(e.start.lat), str(e.end.lat), str(e.emd.lat)]])
-#                             print(f"no_edge数据已成功写入到 vo.csv 文件")
+#                             print(f"no_edge data successfully written to vo.csv")
 #                         except Exception as e:
-#                             print(f"写入文件时出现错误: {e}")
+#                             print(f"Error writing to file: {e}")
 #
 #             _query(node.left, query_rect, query_time)
 #             _query(node.right, query_rect, query_time)
 #         rp_path.pop()
 #
-#     # 查询经纬度范围
+#     # Query geographic range
 #     query_rect = [query_lng_range, query_lat_range]
 #     query_time = [query_time_start, query_time_end]
 #     _query(root, query_rect, query_time)
-
-
