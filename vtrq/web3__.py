@@ -1,650 +1,187 @@
-import os
+from typing import Tuple, List, Union
 
-from web3 import Web3
+# 定义坐标类型别名，增强可读性
+Point = Tuple[float, float]
+Segment = Tuple[Point, Point]
+Rectangle = Tuple[Point, Point]
+
+# 浮点数精度阈值（解决浮点运算误差问题）
+EPS = 1e-9
 
 
-w3 = Web3(Web3.HTTPProvider('http://192.168.174.129:8545'))
+def orientation(p: Point, q: Point, r: Point) -> int:
+    """
+    Determine the orientation relationship of three collinear/non-collinear points.
+    Calculates cross product of vectors (q-p) and (r-q) to judge relative positions:
+    - 0: Collinear (points lie on a straight line)
+    - 1: Clockwise rotation
+    - 2: Counterclockwise rotation
+    
+    :param p: First point (x, y)
+    :param q: Second point (x, y)
+    :param r: Third point (x, y)
+    :return: Orientation code (0/1/2)
+    """
+    # Calculate vector cross product with precision tolerance
+    val = (q[1] - p[1]) * (r[0] - q[0]) - (q[0] - p[0]) * (r[1] - q[1])
+    if abs(val) < EPS:
+        return 0  # Collinear (handle floating point precision)
+    return 1 if val > 0 else 2
 
-# 检查是否成功连接到节点
-if  w3.is_connected():
-    print("连接到以太坊私有链")
 
-# abi = [
-#     {
-#       "inputs": [],
-#       "name": "storedHash1",
-#       "outputs": [
-#         {
-#           "internalType": "bytes32",
-#           "name": "",
-#           "type": "bytes32"
-#         }
-#       ],
-#       "stateMutability": "view",
-#       "type": "function",
-#       "constant": True
-#     },
-#     {
-#       "inputs": [],
-#       "name": "storedHash2",
-#       "outputs": [
-#         {
-#           "internalType": "bytes32",
-#           "name": "",
-#           "type": "bytes32"
-#         }
-#       ],
-#       "stateMutability": "view",
-#       "type": "function",
-#       "constant": True
-#     },
-#     {
-#       "inputs": [
-#         {
-#           "internalType": "bytes32",
-#           "name": "_hash1",
-#           "type": "bytes32"
-#         },
-#         {
-#           "internalType": "bytes32",
-#           "name": "_hash2",
-#           "type": "bytes32"
-#         }
-#       ],
-#       "name": "setHashes",
-#       "outputs": [],
-#       "stateMutability": "nonpayable",
-#       "type": "function"
-#     },
-#     {
-#       "inputs": [],
-#       "name": "getHashes",
-#       "outputs": [
-#         {
-#           "internalType": "bytes32",
-#           "name": "",
-#           "type": "bytes32"
-#         },
-#         {
-#           "internalType": "bytes32",
-#           "name": "",
-#           "type": "bytes32"
-#         }
-#       ],
-#       "stateMutability": "view",
-#       "type": "function",
-#       "constant": True
-#     }
-#   ]
+def on_segment(p: Point, q: Point, r: Point) -> bool:
+    """
+    Check if point q lies on line segment pr (including endpoints).
+    Validates if q's coordinates are within the bounding rectangle of p and r,
+    and confirms collinearity (via orientation check).
+    
+    :param p: Start endpoint of segment (x, y)
+    :param q: Target point to check (x, y)
+    :param r: End endpoint of segment (x, y)
+    :return: True if q is on pr, False otherwise
+    """
+    if (min(p[0], r[0]) - EPS <= q[0] <= max(p[0], r[0]) + EPS and
+        min(p[1], r[1]) - EPS <= q[1] <= max(p[1], r[1]) + EPS):
+        return orientation(p, q, r) == 0
+    return False
 
-abi = [
-    {
-      "inputs": [],
-      "name": "storedHash",
-      "outputs": [
+
+def do_intersect(p1: Point, q1: Point, p2: Point, q2: Point) -> bool:
+    """
+    Check if two line segments (p1q1 and p2q2) intersect (including endpoint overlap).
+    Uses orientation tests to handle both general intersection and collinear overlap cases.
+    
+    :param p1: Start of first segment (x, y)
+    :param q1: End of first segment (x, y)
+    :param p2: Start of second segment (x, y)
+    :param q2: End of second segment (x, y)
+    :return: True if segments intersect, False otherwise
+    """
+    # Calculate orientation values for all endpoint combinations
+    o1 = orientation(p1, q1, p2)
+    o2 = orientation(p1, q1, q2)
+    o3 = orientation(p2, q2, p1)
+    o4 = orientation(p2, q2, q1)
+
+    # Case 1: General intersection (endpoints on opposite sides of each segment)
+    if o1 != o2 and o3 != o4:
+        return True
+
+    # Case 2: Collinear overlap (special case handling)
+    if o1 == 0 and on_segment(p1, p2, q1):
+        return True
+    if o2 == 0 and on_segment(p1, q2, q1):
+        return True
+    if o3 == 0 and on_segment(p2, p1, q2):
+        return True
+    if o4 == 0 and on_segment(p2, q1, q2):
+        return True
+
+    # No intersection
+    return False
+
+
+def segment_intersects_rect(segment: Segment, rect: Rectangle) -> bool:
+    """
+    Check if a line segment intersects with an axis-aligned rectangle (AABB).
+    Optimized with bounding box pre-check to avoid unnecessary edge tests.
+    
+    :param segment: Target line segment ((x1,y1), (x2,y2))
+    :param rect: Axis-aligned rectangle ((x_min,y_min), (x_max,y_max))
+    :return: True if segment intersects rect (including containment), False otherwise
+    """
+    # Extract rectangle bounds
+    x_min, y_min = rect[0]
+    x_max, y_max = rect[1]
+    seg_p1, seg_p2 = segment
+
+    # Pre-check 1: Segment is entirely inside the rectangle (fast path)
+    def point_in_rect(point: Point) -> bool:
+        return (x_min - EPS <= point[0] <= x_max + EPS and
+                y_min - EPS <= point[1] <= y_max + EPS)
+    
+    if point_in_rect(seg_p1) and point_in_rect(seg_p2):
+        return True
+
+    # Pre-check 2: Bounding box of segment does not overlap with rect (early exit)
+    seg_x_min = min(seg_p1[0], seg_p2[0])
+    seg_x_max = max(seg_p1[0], seg_p2[0])
+    seg_y_min = min(seg_p1[1], seg_p2[1])
+    seg_y_max = max(seg_p1[1], seg_p2[1])
+    
+    if (seg_x_max < x_min - EPS or seg_x_min > x_max + EPS or
+        seg_y_max < y_min - EPS or seg_y_min > y_max + EPS):
+        return False
+
+    # Define rectangle edges (bottom/right/top/left)
+    rect_edges: List[Segment] = [
+        ((x_min, y_min), (x_max, y_min)),  # Bottom edge
+        ((x_max, y_min), (x_max, y_max)),  # Right edge
+        ((x_max, y_max), (x_min, y_max)),  # Top edge
+        ((x_min, y_max), (x_min, y_min))   # Left edge
+    ]
+
+    # Check intersection with each rectangle edge
+    for edge in rect_edges:
+        if do_intersect(seg_p1, seg_p2, edge[0], edge[1]):
+            return True
+
+    return False
+
+
+# ------------------------------ Test Cases ------------------------------
+def test_segment_intersects_rect():
+    """Comprehensive test suite for segment-rectangle intersection."""
+    test_cases = [
+        # Case 1: No intersection (segment above rect)
         {
-          "internalType": "bytes32",
-          "name": "",
-          "type": "bytes32"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function",
-      "constant": True
-    },
-    {
-      "inputs": [
+            "name": "Segment above rectangle",
+            "segment": ((104.05057, 30.68449), (104.04993, 30.68676)),
+            "rect": ((104.05, 30.65), (104.06, 30.66)),
+            "expected": False
+        },
+        # Case 2: Segment crosses rectangle edge
         {
-          "internalType": "bytes32",
-          "name": "_hash",
-          "type": "bytes32"
-        }
-      ],
-      "name": "setHash",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getHash",
-      "outputs": [
+            "name": "Segment crosses rectangle edge",
+            "segment": ((104.04, 30.655), (104.07, 30.655)),
+            "rect": ((104.05, 30.65), (104.06, 30.66)),
+            "expected": True
+        },
+        # Case 3: Segment entirely inside rectangle
         {
-          "internalType": "bytes32",
-          "name": "",
-          "type": "bytes32"
+            "name": "Segment inside rectangle",
+            "segment": ((104.052, 30.652), (104.058, 30.658)),
+            "rect": ((104.05, 30.65), (104.06, 30.66)),
+            "expected": True
+        },
+        # Case 4: Segment touches rectangle vertex
+        {
+            "name": "Segment touches rectangle vertex",
+            "segment": ((104.05, 30.65), (104.04, 30.64)),
+            "rect": ((104.05, 30.65), (104.06, 30.66)),
+            "expected": True
+        },
+        # Case 5: Collinear with rectangle edge (overlap)
+        {
+            "name": "Segment collinear with rectangle edge",
+            "segment": ((104.055, 30.65), (104.058, 30.65)),
+            "rect": ((104.05, 30.65), (104.06, 30.66)),
+            "expected": True
         }
-      ],
-      "stateMutability": "view",
-      "type": "function",
-      "constant": True
-    }
-  ]
-# contract_address = "0xF57402a7F3b0187747E79a051bE52FaD6198C84d"
-contract_address = "0xA3d6baa25af0EE8e960A6eb287e05b146C022FE1"
-contract = w3.eth.contract(address=contract_address, abi=abi)
+    ]
 
-import time
-def generate_random_bytes32():
-    """生成随机的32字节哈希值（bytes32格式）"""
-    # 生成32字节随机数据
-    random_bytes = os.urandom(32)
-
-    # 转换为带0x前缀的十六进制字符串
-    hex_str = Web3.to_hex(random_bytes)
-
-    # 确保长度为66字符（0x + 64个字符）
-    assert len(hex_str) == 66, f"生成的哈希长度不正确: {len(hex_str)}"
-
-    return hex_str
-import threading
-def write_data_to_contract():
-    # 发送交易的账户（确保有足够ETH支付gas）
-
-
-    start_time = time.time()
-    # 要写入的哈希值（示例）
-    hash1 = generate_random_bytes32()
-    # hash2 = generate_random_bytes32()
-    bytes32_hash1 = Web3.to_bytes(hexstr=hash1)
-    # bytes32_hash2 = Web3.to_bytes(hexstr=hash2)
-    # 构建交易
-    tx = contract.functions.setHash(bytes32_hash1).build_transaction({
-        'from': w3.eth.accounts[0],
-        'nonce': w3.eth.get_transaction_count(w3.eth.accounts[0]),
-        'gas': 2000000,
-        'gasPrice': w3.eth.gas_price
-    })
-    # 发送交易
-    tx_hash = w3.eth.send_transaction(tx)
-    print(f"交易已发送，哈希: {tx_hash.hex()}")
-    # 等待交易确认
-    tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-    print(f"Deployment Gas: {tx_receipt.gasUsed}")
-    print(f"交易确认，区块号: {tx_receipt.blockNumber}")
-    end_time = time.time()
-    print("数据上传时间",end_time - start_time)
-    return end_time , tx_receipt.blockNumber
-
-    # start_time2 = time.time()
-    # nodeRpc = "http://127.0.0.1:8545"
-    # while True:
-    #     # 创建Web3实例连接到目标节点
-    #     web3 = Web3(Web3.HTTPProvider(nodeRpc))
-    #
-    #     # 获取指定区块号的区块信息
-    #     block = web3.eth.get_block(tx_receipt.blockNumber)
-    #     if block:
-    #         break
-    #
-    # end_time2 = time.time()
-    # print("同步时间",end_time2 - start_time2)
-
-
-
-    # 验证写入结果
-    # current_hashes = contract.functions.getHashes().call()
-    # hash1_hex = Web3.to_hex(current_hashes[0])
-    # hash2_hex = Web3.to_hex(current_hashes[1])
-    #
-    # print(f"哈希1（十六进制）: {hash1_hex}")
-    # print(f"哈希2（十六进制）: {hash2_hex}")
-from web3.exceptions import BlockNotFound
-def check_node_sync(nodeRpc, targetBlock, end_time, sync_times, lock):
-    start_time2 = end_time
-    # nodeRpc = "http://127.0.0.1:8545"
-    while True:
-        # 创建Web3实例连接到目标节点
-        web3 = Web3(Web3.HTTPProvider(nodeRpc))
-
-        # 获取指定区块号的区块信息
-        try:
-            block = web3.eth.get_block(targetBlock)
-            if block:
-                break
-        except BlockNotFound:
-            print(f"区块 {targetBlock} 尚未同步，等待中...")
-
-
-    end_time2 = time.time()
-    with lock:
-        sync_times[nodeRpc] = {
-            'finish_time': end_time2 - start_time2,
-            }  # 相对于检查开始的时间
-
-def check_multiple_nodes_sync(target_nodes, target_block, end_time):
-    sync_times = {}
-    lock = threading.Lock()
-    threads = []
-
-    # 创建并启动所有线程
-    for nodeRpc in target_nodes:
-        thread = threading.Thread(
-            target=check_node_sync,
-            args=(nodeRpc, target_block, end_time, sync_times, lock)
-        )
-        thread.daemon = True
-        threads.append(thread)
-        thread.start()
-
-    # 等待所有线程完成
-    for thread in threads:
-        thread.join()
-
-    return sync_times
+    # Run tests
+    passed = 0
+    for case in test_cases:
+        result = segment_intersects_rect(case["segment"], case["rect"])
+        if result == case["expected"]:
+            passed += 1
+            print(f"✅ {case['name']}: Passed")
+        else:
+            print(f"❌ {case['name']}: Failed (expected {case['expected']}, got {result})")
+    
+    print(f"\nTotal tests: {len(test_cases)}, Passed: {passed}, Failed: {len(test_cases)-passed}")
 
 
 if __name__ == "__main__":
-#     # 写入数据
-    end_time, target_block = write_data_to_contract()
-    target_nodes = [
-        "http://192.168.174.129:8545",
-        "http://192.168.174.129:8546",
-        "http://192.168.174.129:8547",
-        "http://192.168.174.129:8548",
-        "http://192.168.174.128:8545",
-        "http://192.168.174.128:8546",
-        "http://192.168.174.128:8547",
-        "http://192.168.174.128:8548",
-
-    ]
-    results = check_multiple_nodes_sync(target_nodes, target_block, end_time)
-    print(results)
-
-
-
-
-#
-# abi = [
-#     {
-#       "inputs": [
-#         {
-#           "internalType": "uint256",
-#           "name": "",
-#           "type": "uint256"
-#         }
-#       ],
-#       "name": "locationHashes",
-#       "outputs": [
-#         {
-#           "internalType": "int256",
-#           "name": "minLatitude",
-#           "type": "int256"
-#         },
-#         {
-#           "internalType": "int256",
-#           "name": "maxLatitude",
-#           "type": "int256"
-#         },
-#         {
-#           "internalType": "int256",
-#           "name": "minLongitude",
-#           "type": "int256"
-#         },
-#         {
-#           "internalType": "int256",
-#           "name": "maxLongitude",
-#           "type": "int256"
-#         },
-#         {
-#           "internalType": "string",
-#           "name": "hash",
-#           "type": "string"
-#         }
-#       ],
-#       "stateMutability": "view",
-#       "type": "function",
-#       "constant": True
-#     },
-#     {
-#       "inputs": [
-#         {
-#           "internalType": "int256",
-#           "name": "_minLatitude",
-#           "type": "int256"
-#         },
-#         {
-#           "internalType": "int256",
-#           "name": "_maxLatitude",
-#           "type": "int256"
-#         },
-#         {
-#           "internalType": "int256",
-#           "name": "_minLongitude",
-#           "type": "int256"
-#         },
-#         {
-#           "internalType": "int256",
-#           "name": "_maxLongitude",
-#           "type": "int256"
-#         },
-#         {
-#           "internalType": "string",
-#           "name": "_hash",
-#           "type": "string"
-#         }
-#       ],
-#       "name": "addLocationHash",
-#       "outputs": [],
-#       "stateMutability": "nonpayable",
-#       "type": "function"
-#     },
-#     {
-#       "inputs": [
-#         {
-#           "internalType": "uint256",
-#           "name": "_index",
-#           "type": "uint256"
-#         }
-#       ],
-#       "name": "deleteLocationHash",
-#       "outputs": [],
-#       "stateMutability": "nonpayable",
-#       "type": "function"
-#     },
-#     {
-#       "inputs": [
-#         {
-#           "internalType": "uint256",
-#           "name": "_index",
-#           "type": "uint256"
-#         }
-#       ],
-#       "name": "getLocationHash",
-#       "outputs": [
-#         {
-#           "internalType": "int256",
-#           "name": "minLatitude",
-#           "type": "int256"
-#         },
-#         {
-#           "internalType": "int256",
-#           "name": "maxLatitude",
-#           "type": "int256"
-#         },
-#         {
-#           "internalType": "int256",
-#           "name": "minLongitude",
-#           "type": "int256"
-#         },
-#         {
-#           "internalType": "int256",
-#           "name": "maxLongitude",
-#           "type": "int256"
-#         },
-#         {
-#           "internalType": "string",
-#           "name": "hash",
-#           "type": "string"
-#         }
-#       ],
-#       "stateMutability": "view",
-#       "type": "function",
-#       "constant": True
-#     },
-#     {
-#       "inputs": [],
-#       "name": "getLocationHashCount",
-#       "outputs": [
-#         {
-#           "internalType": "uint256",
-#           "name": "",
-#           "type": "uint256"
-#         }
-#       ],
-#       "stateMutability": "view",
-#       "type": "function",
-#       "constant": True
-#     },
-#     {
-#       "inputs": [
-#         {
-#           "internalType": "int256",
-#           "name": "minLatitude",
-#           "type": "int256"
-#         },
-#         {
-#           "internalType": "int256",
-#           "name": "maxLatitude",
-#           "type": "int256"
-#         },
-#         {
-#           "internalType": "int256",
-#           "name": "minLongitude",
-#           "type": "int256"
-#         },
-#         {
-#           "internalType": "int256",
-#           "name": "maxLongitude",
-#           "type": "int256"
-#         }
-#       ],
-#       "name": "findSingleHashByCoordinateRanges",
-#       "outputs": [
-#         {
-#           "internalType": "string",
-#           "name": "",
-#           "type": "string"
-#         }
-#       ],
-#       "stateMutability": "view",
-#       "type": "function",
-#       "constant": True
-#     }
-#   ]
-#
-# # 合约部署后的地址，需要替换为实际的合约地址
-# contract_address = "0xdDCbc39C4bDAA6D7ed766d18A914eCFde76eBBde"
-#
-# # 创建合约实例，结合地址和 ABI 来调用合约函数
-# contract = w3.eth.contract(address=contract_address, abi=abi)
-#
-#
-# # 连接到以太坊节点，根据实际情况修改地址和端口
-# w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
-#
-# # 检查是否成功连接到节点
-# if not w3.is_connected():
-#     print("无法连接到以太坊节点，请检查节点是否运行。")
-#     exit()
-#
-# # 合约的 ABI（应用二进制接口）
-# abi = [
-#     {
-#         "inputs": [
-#             {
-#                 "internalType": "int256",
-#                 "name": "_minLatitude",
-#                 "type": "int256"
-#             },
-#             {
-#                 "internalType": "int256",
-#                 "name": "_maxLatitude",
-#                 "type": "int256"
-#             },
-#             {
-#                 "internalType": "int256",
-#                 "name": "_minLongitude",
-#                 "type": "int256"
-#             },
-#             {
-#                 "internalType": "int256",
-#                 "name": "_maxLongitude",
-#                 "type": "int256"
-#             },
-#             {
-#                 "internalType": "string",
-#                 "name": "_hash",
-#                 "type": "string"
-#             }
-#         ],
-#         "name": "addLocationHash",
-#         "outputs": [],
-#         "stateMutability": "nonpayable",
-#         "type": "function"
-#     },
-#     {
-#         "inputs": [
-#             {
-#                 "internalType": "uint256",
-#                 "name": "_index",
-#                 "type": "uint256"
-#             }
-#         ],
-#         "name": "getLocationHash",
-#         "outputs": [
-#             {
-#                 "internalType": "int256",
-#                 "name": "minLatitude",
-#                 "type": "int256"
-#             },
-#             {
-#                 "internalType": "int256",
-#                 "name": "maxLatitude",
-#                 "type": "int256"
-#             },
-#             {
-#                 "internalType": "int256",
-#                 "name": "minLongitude",
-#                 "type": "int256"
-#             },
-#             {
-#                 "internalType": "int256",
-#                 "name": "maxLongitude",
-#                 "type": "int256"
-#             },
-#             {
-#                 "internalType": "string",
-#                 "name": "hash",
-#                 "type": "string"
-#             }
-#         ],
-#         "stateMutability": "view",
-#         "type": "function"
-#     },
-#     {
-#         "inputs": [],
-#         "name": "getLocationHashCount",
-#         "outputs": [
-#             {
-#                 "internalType": "uint256",
-#                 "name": "",
-#                 "type": "uint256"
-#             }
-#         ],
-#         "stateMutability": "view",
-#         "type": "function"
-#     },
-#     {
-#         "inputs": [
-#             {
-#                 "internalType": "int256",
-#                 "name": "minLatitude",
-#                 "type": "int256"
-#             },
-#             {
-#                 "internalType": "int256",
-#                 "name": "maxLatitude",
-#                 "type": "int256"
-#             },
-#             {
-#                 "internalType": "int256",
-#                 "name": "minLongitude",
-#                 "type": "int256"
-#             },
-#             {
-#                 "internalType": "int256",
-#                 "name": "maxLongitude",
-#                 "type": "int256"
-#             }
-#         ],
-#         "name": "findSingleHashByCoordinateRanges",
-#         "outputs": [
-#             {
-#                 "internalType": "string",
-#                 "name": "",
-#                 "type": "string"
-#             }
-#         ],
-#         "stateMutability": "view",
-#         "type": "function"
-#     }
-# ]
-#
-# # 合约部署后的地址，需要替换为实际的合约地址
-# contract_address = "0xdDCbc39C4bDAA6D7ed766d18A914eCFde76eBBde"
-#
-# # 创建合约实例
-# contract = w3.eth.contract(address=contract_address, abi=abi)
-#
-#
-# # 向合约写入数据
-# def write_data_to_contract():
-#     try:
-#         with open('data.txt', 'r') as file:
-#             lines = file.readlines()
-#             for line in lines:
-#                 # 假设每行数据格式为：minLatitude,maxLatitude,minLongitude,maxLongitude,hash
-#                 data = line.strip().split(',')
-#                 min_latitude = int(float(data[0]) * 1e6)
-#                 max_latitude = int(float(data[1]) * 1e6)
-#                 min_longitude = int(float(data[2]) * 1e6)
-#                 max_longitude = int(float(data[3]) * 1e6)
-#                 hash_str = data[4]
-#
-#                 # 调用合约的 addLocationHash 函数
-#                 txn = contract.functions.addLocationHash(
-#                     min_latitude,
-#                     max_latitude,
-#                     min_longitude,
-#                     max_longitude,
-#                     hash_str
-#                 ).build_transaction({
-#                     'from': w3.eth.accounts[0],
-#                     'nonce': w3.eth.get_transaction_count(w3.eth.accounts[0]),
-#                     'gas': 2000000,
-#                     'gasPrice': w3.eth.gas_price
-#                 })
-#                 # 发送交易
-#                 txn_hash = w3.eth.send_transaction(txn)
-#                 txn_receipt = w3.eth.wait_for_transaction_receipt(txn_hash)
-#                 print(f"Transaction hash: {txn_receipt.transactionHash.hex()}")
-#     except FileNotFoundError:
-#         print("未找到 TXT 文件，请检查文件路径。")
-#     except Exception as e:
-#         print(f"发生错误: {e}")
-#
-#
-# # 从合约查询数据
-# # 根据输入的经纬度查询数据
-# def query_data_from_contract():
-#     try:
-#         # 获取用户输入的经纬度数据
-#         min_latitude_input = float(32.5678)
-#         max_latitude_input = float(33.0087)
-#         min_longitude_input = float(122.0456)
-#         max_longitude_input = float(123.00915)
-#
-#         # 将输入的经纬度转换为整数
-#         min_latitude = int(min_latitude_input * 1e6)
-#         max_latitude = int(max_latitude_input * 1e6)
-#         min_longitude = int(min_longitude_input * 1e6)
-#         max_longitude = int(max_longitude_input * 1e6)
-#
-#         # 调用合约的 findSingleHashByCoordinateRanges 函数
-#         result = contract.functions.findSingleHashByCoordinateRanges(
-#             min_latitude,
-#             max_latitude,
-#             min_longitude,
-#             max_longitude
-#         ).call()
-#
-#         if result:
-#             print(f"找到匹配的记录，对应的字符串为: {result}")
-#         else:
-#             print("未找到匹配的记录。")
-#
-#     except Exception as e:
-#         print(f"查询数据时发生错误: {e}")
-#
-#
+    test_segment_intersects_rect()
