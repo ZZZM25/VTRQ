@@ -9,9 +9,9 @@ from vector_cross_product import segment_intersects_rect
 from new_interval_tree import Interval
 
 # node_rect = [node.border_lng, node.border_lat]
-#判断两个经纬度方框是否有交集
+# Check if two longitude/latitude rectangles intersect
 def rectangles_intersect(rect1, rect2):
-    if rect1 != []:# 因为有的节点不是叶子节点，但他什么边也不存
+    if rect1 != []:  # Because some non-leaf nodes may store no edges
         min_lat1, max_lat1 = rect1[1]
         min_lng1, max_lng1 = rect1[0]
         min_lat2, max_lat2 = rect2[1]
@@ -22,12 +22,12 @@ def rectangles_intersect(rect1, rect2):
 
 
 def range_query(root, query_lng_range, query_lat_range):
-    # 查询
+    # Range query
     traj_set = set()
     rp_path = []
     query_rect = [query_lng_range, query_lat_range]
 
-    # 用于收集所有要写入CSV的数据
+    # Used to collect all data to be written to CSV
     csv_data = []
 
     def write_to_csv_buffer(ver, data=None):
@@ -37,13 +37,13 @@ def range_query(root, query_lng_range, query_lat_range):
             csv_data.append([ver])
 
     def process_edge(e, query_rect):
-        # 第一种情况判断这条边的两个端点是否至少有一个落在查询范围区域内
+        # First case: Check if at least one of the two endpoints of this edge falls within the query range
         if (query_rect[0][0] <= e.start.lng <= query_rect[0][1] and query_rect[1][0] <= e.start.lat <= query_rect[1][
             1]) or (
                 query_rect[0][0] <= e.end.lng <= query_rect[0][1] and query_rect[1][0] <= e.end.lat <= query_rect[1][
             1]):
 
-            # 这种是在查询范围内的边
+            # This edge is within the query range
             ver = edge_vo_hash(e)
             csv_data.append(["e_vo_start"])
             write_to_csv_buffer(ver)
@@ -51,7 +51,7 @@ def range_query(root, query_lng_range, query_lat_range):
             traj_set.update(e.traj_hashList)
             csv_data.append(["e_vo_end"])
 
-        # 如果两个端点都不在查询范围，那么判断线段和查询范围是否有交集
+        # If both endpoints are outside the query range, check if the line segment intersects with the query range
         elif segment_intersects_rect(((e.start.lng, e.start.lat), (e.end.lng, e.end.lat)),
                                      ((query_rect[0][0], query_rect[1][0]), (query_rect[0][1], query_rect[1][1]))):
 
@@ -62,7 +62,7 @@ def range_query(root, query_lng_range, query_lat_range):
             traj_set.update(e.traj_hashList)
             csv_data.append(["e_vo_end"])
         else:
-            # 边不在查询范围内
+            # Edge is outside the query range
             ver = no_edge_vo_hash(e)
             data = [str(e.start.lng), str(e.start.lat), str(e.end.lng), str(e.end.lat)]
             csv_data.append(["e_vo_start"])
@@ -72,10 +72,10 @@ def range_query(root, query_lng_range, query_lat_range):
     def _query(node, query_rect):
         if node is None:
             return
-        # 把每一个走过的节点记录
+        # Record each node traversed
         rp_path.append(node)
         node_rect = [node.border_lng, node.border_lat]
-        # 如果该区域范围不符合查询范围要返回经纬度不符合的验证信息
+        # If the region range does not match the query range, return verification information for inconsistent longitude/latitude
         if not rectangles_intersect(node_rect, query_rect):
             a = list(rp_path)
             ver = first_vo_hash_collect2(a)
@@ -98,12 +98,12 @@ def range_query(root, query_lng_range, query_lat_range):
 
         if not node.is_leaf():
             p = True
-            # 如果查询范围和邻接边范围也没有交集，那么可以省略每一条边的逐个查询
+            # If there is no intersection between the query range and the adjacent edge range, individual query of each edge can be omitted
             if not rectangles_intersect(node.linking_box, query_rect):
                 p = False
-            # 首先这个区域满足查询范围先把第一层索引的vo写入
+            # First, since this region meets the query range, write the VO (Verification Object) of the first-level index
             a = list(rp_path)
-            # 如果邻接边范围与查询范围有交集
+            # If the adjacent edge range intersects with the query range
             if p:
                 ver = first_vo_hash_collect1(a, p)
                 csv_data.append(["lng_lat_vo_start"])
@@ -121,7 +121,7 @@ def range_query(root, query_lng_range, query_lat_range):
                             node.linking_box[1][1]]
                     write_to_csv_buffer(ver, data)
                     csv_data.append(["lng_lat_vo_end"])
-                # 邻接边范围不存在
+                # Adjacent edge range does not exist
                 else:
                     data = ["", "", "", ""]
                     write_to_csv_buffer(ver, data)
@@ -131,10 +131,10 @@ def range_query(root, query_lng_range, query_lat_range):
             _query(node.right, query_rect)
         rp_path.pop()
 
-    # 查询经纬度范围
+    # Query longitude/latitude range
     _query(root, query_rect)
 
-    # 将所有收集的数据一次性写入CSV文件
+    # Write all collected data to CSV file at once
     with open('vo.csv', 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerows(csv_data)
@@ -145,13 +145,11 @@ def range_query(root, query_lng_range, query_lat_range):
 
 
 def proof_vo(filename):
-
-    # 文件路径
+    # File path
     file_path = filename
-    # 打开文件
+    # Open file
     with open(file_path, 'r', encoding='utf-8') as file:
-
-        # 逐行读取文件内容
+        # Read file content line by line
         flag1 = []
         flag2 = []
         list1 = []
@@ -163,28 +161,27 @@ def proof_vo(filename):
             if row[0] == "lng_lat_vo_start":
                 flag1 = next(reader)
                 # print(flag1)
-                # 如果lag_lat_vo长度是一说明这个区域与查询范围是有交集的
+                # If the length of lng_lat_vo is 1, it means this region intersects with the query range
                 if len(flag1) <= 1:
                     flag1 = ast.literal_eval(flag1[0])
                     flag1.reverse()
                     list1 = []
-                # 如果lag_lat_vo长度是大于一的说明这个区域与查询范围没有交集，要把后面的四个经纬度数据填入计算hash
+                # If the length of lng_lat_vo is greater than 1, it means this region does not intersect with the query range; fill in the subsequent four longitude/latitude data to calculate the hash
                 else:
                     c = flag1[0]
                     b = flag1[1]
                     c = ast.literal_eval(c)
                     c.reverse()
                     a = c[-1]
-                    # 读取要填入的经纬度数据
-
+                    # Read longitude/latitude data to be filled in
                     b = ast.literal_eval(b)
                     # print(b)
                     # b = b[0]
-                    # 如果b是嵌套表说明是大经纬度不满足
-                    if  isinstance(b[0], list):
+                    # If b is a nested list, it means the large longitude/latitude range is not satisfied
+                    if isinstance(b[0], list):
                         b = b[0]
 
-                    # 把经纬度数据插入
+                    # Insert longitude/latitude data
                     j = 0
                     for i in range(len(a)):
                         if a[i] == " ":
@@ -231,23 +228,19 @@ def proof_vo(filename):
 
                     #print(hash_hex)
                     if hash_hex != "85dc2a65b781bcd76a519f46b4c1ae821c5aa7cffa1a0cf9e064cc4407bc962f":
-
                         return False
 
             elif row[0] == "e_vo_start":
-
                 flag2 = next(reader)
                 # print(flag2)
-                # 如果e_vo长度是一说明这个边与查询范围有交集
+                # If the length of e_vo is 1, it means this edge intersects with the query range
                 if len(flag2) <= 1:
                     flag2 = ast.literal_eval(flag2[0])
                     list2 = []
-                # 如果e_vo长度大于一说明这条边是因为不在范围内所以把后面经纬度数据插入验证
+                # If the length of e_vo is greater than 1, it means this edge is outside the range, so insert the subsequent longitude/latitude data for verification
                 else:
                     a = flag2[0]
-
                     b = flag2[1]
-
                     a = ast.literal_eval(a)
                     b = ast.literal_eval(b)
                     for i in range(4):
@@ -255,7 +248,6 @@ def proof_vo(filename):
                     # print(a)
                     # print(44)
                     all_hash_join = '+'.join(item for item in a if item)
-
                     encoded_data = all_hash_join.encode('utf-8')
                     hash_object = hashlib.sha256(encoded_data)
                     hash_hex = hash_object.hexdigest()
@@ -277,8 +269,6 @@ def proof_vo(filename):
                 # print(list1)
 
             elif row[0] == "lng_lat_vo_end":
-
-
                 t = flag1.pop()
                 j = 0
                 for i in range(len(t)):
@@ -306,7 +296,7 @@ def proof_vo(filename):
                # print(hash_hex)
                 if hash_hex != "85dc2a65b781bcd76a519f46b4c1ae821c5aa7cffa1a0cf9e064cc4407bc962f":
                     return False
-            # 改这里用累加器
+            # Modify here to use accumulator
             else:
                 a = row[0]
                 a = ast.literal_eval(a)
@@ -321,4 +311,3 @@ def proof_vo(filename):
                     list2.append(hash_hex)
 
     return True
-
